@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Stocks Pro | Smart Search</title>
+    <!-- โหลด Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- โหลด TradingView Lightweight Charts -->
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <!-- โหลด Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { background-color: #0b0e14; color: #d1d4dc; font-family: 'Inter', sans-serif; }
+        .glass-panel { background: rgba(30, 34, 45, 0.95); border: 1px solid rgba(255, 255, 255, 0.05); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2e39; border-radius: 4px; }
+        input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="glass-panel w-full flex items-center justify-between px-6 py-4 z-10 shrink-0 border-b border-gray-800">
+        <div class="flex items-center gap-3">
+            <i class="ph-fill ph-chart-line-up text-3xl text-blue-500"></i>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-wide">US Stocks Pro</h1>
+                <p class="text-xs text-gray-400">Yahoo Finance Data (Multi-Proxy Fallback)</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col md:flex-row relative">
+        
+        <!-- Controls Sidebar -->
+        <aside class="glass-panel w-full md:w-80 p-5 flex flex-col gap-6 shrink-0 z-10 border-t md:border-t-0 md:border-r border-gray-800 overflow-y-auto">
+            
+            <!-- Smart Search Input -->
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">ค้นหาหุ้น (พิมพ์ชื่อหรือตัวย่อ)</label>
+                <div class="relative">
+                    <!-- ใช้ datalist เพื่อทำ Autocomplete -->
+                    <input type="text" list="stock-list" id="symbolInput" value="AAPL" placeholder="เช่น Apple, TSLA, SPY" class="w-full bg-[#131722] border border-gray-700 text-white rounded-lg px-4 py-3 text-lg font-bold transition-all placeholder:text-sm placeholder:font-normal placeholder:text-gray-600">
+                    <datalist id="stock-list">
+                        <!-- รายชื่อหุ้นจะถูกเติมด้วย JavaScript -->
+                    </datalist>
+                </div>
+            </div>
+
+            <!-- Time Range -->
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">ช่วงเวลา</label>
+                <select id="rangeSelect" class="w-full bg-[#131722] border border-gray-700 text-white rounded-lg px-4 py-3 outline-none focus:border-blue-500 transition-colors cursor-pointer">
+                    <option value="3mo">3 เดือนย้อนหลัง</option>
+                    <option value="6mo">6 เดือนย้อนหลัง</option>
+                    <option value="1y" selected>1 ปี ย้อนหลัง</option>
+                    <option value="2y">2 ปี ย้อนหลัง</option>
+                    <option value="5y">5 ปี ย้อนหลัง</option>
+                </select>
+            </div>
+
+            <button id="loadBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-3 rounded-lg transition-all shadow-lg shadow-blue-900/20 flex justify-center items-center gap-2">
+                <i class="ph-bold ph-magnifying-glass"></i> ดูข้อมูลกราฟ
+            </button>
+
+            <!-- Error Message Box -->
+            <div id="errorMsg" class="hidden bg-red-900/30 border border-red-500/50 text-red-400 text-sm p-3 rounded-lg flex items-start gap-2">
+                <i class="ph-fill ph-warning-circle text-lg shrink-0 mt-0.5"></i>
+                <span id="errorText">เกิดข้อผิดพลาดในการโหลดข้อมูล</span>
+            </div>
+
+            <hr class="border-gray-800 my-2">
+
+            <!-- Tools & Toggles -->
+            <div class="flex flex-col gap-4">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">ระบบหาแนวรับ-แนวต้าน</label>
+                <button id="toggleSR" class="flex items-center justify-between w-full bg-[#2a2e39] hover:bg-[#323744] border border-gray-700 text-white px-4 py-3 rounded-lg transition-all">
+                    <div class="flex items-center gap-2">
+                        <i class="ph ph-ruler text-xl text-blue-400"></i>
+                        <span class="font-medium text-sm" id="toggleSRText">ซ่อนแนวรับ-แนวต้าน</span>
+                    </div>
+                    <div id="toggleIndicator" class="w-10 h-5 bg-blue-500 rounded-full p-1 transition-colors relative">
+                        <div class="w-3 h-3 bg-white rounded-full absolute right-1 transition-all"></div>
+                    </div>
+                </button>
+
+                <div class="bg-[#131722] p-4 rounded-lg border border-gray-800">
+                    <h4 class="text-xs font-bold text-gray-400 mb-2">ข้อมูลสถิติปัจจุบัน</h4>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-gray-500">ราคาปิดล่าสุด:</span>
+                        <span class="text-sm font-bold text-white" id="statClose">-</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-500">แนวต้านล่าสุด:</span>
+                        <span class="text-sm font-bold text-red-400" id="statRes">-</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-xs text-gray-500">แนวรับล่าสุด:</span>
+                        <span class="text-sm font-bold text-green-400" id="statSup">-</span>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Chart Area -->
+        <div class="flex-grow relative bg-[#131722]" id="chartContainer">
+            <!-- Loading Overlay -->
+            <div id="loadingOverlay" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#131722]/80 backdrop-blur-sm hidden">
+                <i class="ph-bold ph-circle-notch text-5xl text-blue-500 animate-spin mb-4"></i>
+                <p class="text-white font-medium animate-pulse" id="loadingText">กำลังดึงข้อมูลจากตลาด...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // ฐานข้อมูลรายชื่อหุ้นยอดนิยม (ตัวย่อ : ชื่อบริษัท) 
+        // ใส่เพื่ออำนวยความสะดวกในการค้นหา (พิมพ์ชื่อบริษัทก็เจอ)
+        const popularStocks = {
+            "AAPL": "Apple Inc.", "MSFT": "Microsoft", "NVDA": "NVIDIA", "GOOGL": "Alphabet (Google)",
+            "AMZN": "Amazon", "META": "Meta Platforms (Facebook)", "TSLA": "Tesla", "BRK-B": "Berkshire Hathaway",
+            "LLY": "Eli Lilly", "V": "Visa", "JPM": "JPMorgan Chase", "UNH": "UnitedHealth",
+            "WMT": "Walmart", "JNJ": "Johnson & Johnson", "XOM": "Exxon Mobil", "MA": "Mastercard",
+            "PG": "Procter & Gamble", "AVGO": "Broadcom", "HD": "Home Depot", "ORCL": "Oracle",
+            "CVX": "Chevron", "MRK": "Merck & Co.", "KO": "Coca-Cola", "PEP": "PepsiCo",
+            "COST": "Costco", "BAC": "Bank of America", "ABBV": "AbbVie", "MCD": "McDonald's",
+            "CRM": "Salesforce", "CSCO": "Cisco", "TMO": "Thermo Fisher Scientific", "PFE": "Pfizer",
+            "NFLX": "Netflix", "AMD": "Advanced Micro Devices", "INTC": "Intel", "DIS": "Walt Disney",
+            "SPY": "SPDR S&P 500 ETF", "QQQ": "Invesco QQQ Trust"
+        };
+
+        let chart;
+        let candlestickSeries;
+        let currentData = [];
+        let srLines = [];
+        let isSRVisible = true;
+
+        // เริ่มต้นสร้างกราฟ
+        function initChart() {
+            const container = document.getElementById('chartContainer');
+            chart = LightweightCharts.createChart(container, {
+                layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc' },
+                grid: { vertLines: { color: 'rgba(42, 46, 57, 0.3)' }, horzLines: { color: 'rgba(42, 46, 57, 0.3)' } },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                rightPriceScale: { borderColor: 'rgba(197, 203, 206, 0.4)' },
+                timeScale: { borderColor: 'rgba(197, 203, 206, 0.4)', timeVisible: false },
+            });
+
+            candlestickSeries = chart.addCandlestickSeries({
+                upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
+                wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+            });
+
+            new ResizeObserver(entries => {
+                if (entries.length === 0 || entries[0].target !== container) return;
+                const newRect = entries[0].contentRect;
+                chart.applyOptions({ height: newRect.height, width: newRect.width });
+            }).observe(container);
+        }
+
+        // ดึงข้อมูลผ่าน Multi-Proxy (แก้ปัญหา CORS & เซิร์ฟเวอร์ล่ม)
+        async function fetchRealMarketData(symbol, range) {
+            const yfUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${range}`;
+            
+            // ใช้หลาย Proxy เพื่อสำรองกรณีตัวใดตัวหนึ่งล่ม
+            const proxies = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yfUrl)}`
+            ];
+
+            let yfData = null;
+            let lastError = null;
+
+            for (let proxyUrl of proxies) {
+                try {
+                    const response = await fetch(proxyUrl);
+                    if (response.ok) {
+                        const text = await response.text();
+                        try {
+                            yfData = JSON.parse(text);
+                            // ตรวจสอบว่ามีข้อมูล chart จริงๆ
+                            if (yfData && yfData.chart && yfData.chart.result) break; 
+                        } catch(e) {
+                            // กรณี proxy ตอบกลับเป็น HTML แจ้ง error
+                            continue; 
+                        }
+                    }
+                } catch (err) {
+                    lastError = err;
+                    console.warn(`Proxy failed, trying next...`);
+                }
+            }
+
+            if (!yfData || !yfData.chart || !yfData.chart.result || yfData.chart.result.length === 0) {
+                if(yfData && yfData.chart && yfData.chart.error) {
+                    throw new Error(`หุ้น "${symbol}" ไม่ถูกต้องหรือไม่มีในตลาด`);
+                }
+                throw new Error(`เชื่อมต่อเซิร์ฟเวอร์ข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง`);
+            }
+
+            const result = yfData.chart.result[0];
+            const timestamps = result.timestamp;
+            const quote = result.indicators.quote[0];
+            
+            if (!timestamps || !quote) throw new Error('รูปแบบข้อมูลที่ได้รับไม่สมบูรณ์');
+            
+            let chartData = [];
+            for (let i = 0; i < timestamps.length; i++) {
+                if (quote.open[i] !== null && quote.close[i] !== null) {
+                    const dateStr = new Date(timestamps[i] * 1000).toISOString().split('T')[0];
+                    if(chartData.length > 0 && chartData[chartData.length-1].time === dateStr) continue;
+
+                    chartData.push({
+                        time: dateStr,
+                        open: parseFloat(quote.open[i].toFixed(2)),
+                        high: parseFloat(quote.high[i].toFixed(2)),
+                        low: parseFloat(quote.low[i].toFixed(2)),
+                        close: parseFloat(quote.close[i].toFixed(2))
+                    });
+                }
+            }
+            
+            if (chartData.length === 0) throw new Error('ไม่มีประวัติการซื้อขายในช่วงเวลานี้');
+            return chartData;
+        }
+
+        // คำนวณแนวรับแนวต้านแบบ Swing High/Low
+        function calculateSupportResistance(data) {
+            let levels = [];
+            let lookback = 12; // แท่งเทียนเปรียบเทียบ
+
+            for (let i = lookback; i < data.length - lookback; i++) {
+                let isSwingHigh = true; let isSwingLow = true;
+                for (let j = 1; j <= lookback; j++) {
+                    if (data[i - j].high > data[i].high || data[i + j].high > data[i].high) isSwingHigh = false;
+                    if (data[i - j].low < data[i].low || data[i + j].low < data[i].low) isSwingLow = false;
+                }
+                if (isSwingHigh) levels.push({ type: 'resistance', price: data[i].high });
+                if (isSwingLow) levels.push({ type: 'support', price: data[i].low });
+            }
+
+            // กรองรวมเส้นที่ใกล้เคียงกัน (ระยะห่าง 2.5%)
+            let filteredLevels = [];
+            let threshold = 0.025; 
+            
+            levels.reverse().forEach(level => {
+                let isTooClose = filteredLevels.some(f => f.type === level.type && Math.abs(f.price - level.price) / f.price < threshold);
+                if (!isTooClose) filteredLevels.push(level);
+            });
+
+            // ดึงแนวต้านและแนวรับ 2 ระดับล่าสุด
+            let supports = filteredLevels.filter(l => l.type === 'support').slice(0, 2).map(l => l.price);
+            let resistances = filteredLevels.filter(l => l.type === 'resistance').slice(0, 2).map(l => l.price);
+
+            return { supports, resistances };
+        }
+
+        // วาดเส้นแนวรับแนวต้านลงบนกราฟ
+        function drawSRLines() {
+            srLines.forEach(line => candlestickSeries.removePriceLine(line));
+            srLines = [];
+            const statRes = document.getElementById('statRes');
+            const statSup = document.getElementById('statSup');
+            statRes.innerText = '-'; statSup.innerText = '-';
+
+            if (!isSRVisible || currentData.length === 0) return;
+
+            const { supports, resistances } = calculateSupportResistance(currentData);
+
+            supports.forEach(price => {
+                const line = candlestickSeries.createPriceLine({
+                    price: price, color: '#00e676', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'Support',
+                });
+                srLines.push(line);
+            });
+
+            resistances.forEach(price => {
+                const line = candlestickSeries.createPriceLine({
+                    price: price, color: '#ff5252', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'Resistance',
+                });
+                srLines.push(line);
+            });
+
+            if(resistances.length > 0) statRes.innerText = Math.min(...resistances).toFixed(2);
+            if(supports.length > 0) statSup.innerText = Math.max(...supports).toFixed(2);
+        }
+
+        // ฟังก์ชันสั่งโหลดกราฟ
+        async function loadStock() {
+            const symbolInput = document.getElementById('symbolInput');
+            let rawSymbol = symbolInput.value.trim().toUpperCase();
+            if(!rawSymbol) return;
+
+            // ตรวจสอบว่าผู้ใช้เลือกจาก Datalist (ซึ่งอาจมีชื่อต่อท้ายมา) ให้ดึงเฉพาะตัวย่อ
+            let symbol = rawSymbol.split(' ')[0]; 
+            symbolInput.value = symbol; 
+
+            const range = document.getElementById('rangeSelect').value;
+            const overlay = document.getElementById('loadingOverlay');
+            const errorMsg = document.getElementById('errorMsg');
+            const errorText = document.getElementById('errorText');
+            const statClose = document.getElementById('statClose');
+
+            overlay.classList.remove('hidden');
+            errorMsg.classList.add('hidden');
+            statClose.innerText = '-';
+
+            try {
+                currentData = await fetchRealMarketData(symbol, range);
+                candlestickSeries.setData(currentData);
+                chart.timeScale().fitContent(); 
+                statClose.innerText = currentData[currentData.length - 1].close.toFixed(2);
+                drawSRLines();
+            } catch (err) {
+                console.error(err);
+                errorText.innerText = err.message;
+                errorMsg.classList.remove('hidden');
+            } finally {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // จัดการเหตุการณ์ต่างๆ
+        document.addEventListener('DOMContentLoaded', () => {
+            // เติมรายชื่อหุ้นลงใน Datalist
+            const dataList = document.getElementById('stock-list');
+            for (const [ticker, name] of Object.entries(popularStocks)) {
+                const option = document.createElement('option');
+                option.value = ticker;
+                option.text = name;
+                dataList.appendChild(option);
+            }
+
+            initChart();
+            loadStock(); // โหลด AAPL เริ่มต้น
+
+            document.getElementById('loadBtn').addEventListener('click', loadStock);
+            
+            document.getElementById('symbolInput').addEventListener('keypress', (e) => {
+                if(e.key === 'Enter') {
+                    e.target.blur(); // ซ่อนคีย์บอร์ดบนมือถือ
+                    loadStock();
+                }
+            });
+
+            document.getElementById('rangeSelect').addEventListener('change', loadStock);
+
+            document.getElementById('toggleSR').addEventListener('click', () => {
+                isSRVisible = !isSRVisible;
+                const indicator = document.getElementById('toggleIndicator');
+                const text = document.getElementById('toggleSRText');
+                const dot = indicator.querySelector('div');
+
+                if (isSRVisible) {
+                    indicator.classList.remove('bg-gray-600'); indicator.classList.add('bg-blue-500');
+                    dot.classList.remove('left-1'); dot.classList.add('right-1');
+                    text.innerText = 'ซ่อนแนวรับ-แนวต้าน';
+                } else {
+                    indicator.classList.remove('bg-blue-500'); indicator.classList.add('bg-gray-600');
+                    dot.classList.remove('right-1'); dot.classList.add('left-1');
+                    text.innerText = 'แสดงแนวรับ-แนวต้าน';
+                }
+                drawSRLines();
+            });
+        });
+
+    </script>
+</body>
+</html>
