@@ -3,205 +3,379 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>US Stocks - Safe Mode</title>
-    <!-- Tailwind CSS -->
+    <title>US Stocks Pro | Real Data</title>
+    <!-- โหลด Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- TradingView Lightweight Charts -->
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    
+    <!-- ล็อกเวอร์ชัน TradingView ที่ 4.1.1 (แก้ปัญหาเวอร์ชันใหม่ตัดคำสั่งทิ้งจนกราฟพัง) -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    
+    <!-- โหลด Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
-        body { background-color: #0b0e14; color: #d1d4dc; font-family: sans-serif; margin: 0; padding: 0; }
-        /* กำหนดความสูงกราฟให้ตายตัวไปเลย ป้องกันมือถือบีบจอ */
-        #chartContainer { width: 100%; height: 50vh; min-height: 350px; background-color: #131722; border-bottom: 2px solid #2a2e39; }
+        body { background-color: #0b0e14; color: #d1d4dc; font-family: 'Inter', sans-serif; height: 100dvh; overflow: hidden; margin: 0;}
+        .glass-panel { background: rgba(30, 34, 45, 0.95); border-right: 1px solid rgba(255, 255, 255, 0.05); }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2e39; border-radius: 4px; }
+        input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
     </style>
 </head>
-<body class="flex flex-col w-full h-full">
+<body class="w-full h-full flex flex-col text-sm md:text-base">
 
-    <!-- Header เล็กๆ -->
-    <header class="p-3 bg-[#1e222d] flex justify-between items-center border-b border-gray-800">
-        <h1 class="text-white font-bold text-lg">📈 US Stocks (Safe Mode)</h1>
-        <span class="text-xs bg-green-900 text-green-400 px-2 py-1 rounded-full">Offline Demo</span>
+    <!-- Header -->
+    <header class="bg-[#1e222d] w-full flex items-center justify-between px-4 py-3 z-10 shrink-0 border-b border-gray-800">
+        <div class="flex items-center gap-2">
+            <i class="ph-fill ph-chart-line-up text-2xl text-blue-500"></i>
+            <div>
+                <h1 class="text-base md:text-lg font-bold text-white leading-tight">US Stocks Pro</h1>
+                <p class="text-[10px] text-gray-400">Stable Version 4.1.1</p>
+            </div>
+        </div>
     </header>
 
-    <!-- กราฟอยู่ด้านบนสุดเสมอ -->
-    <div id="chartContainer"></div>
-
-    <!-- ส่วนควบคุมอยู่ด้านล่าง สามารถเลื่อนจอลงมาดูได้ -->
-    <div class="p-4 flex-grow bg-[#0b0e14]">
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col md:flex-row relative overflow-hidden">
         
-        <div class="mb-4">
-            <p class="text-sm text-gray-400 mb-2">เพื่อแก้ปัญหากราฟไม่ขึ้น เวอร์ชันนี้จะใช้ "ข้อมูลจำลอง (Mock Data)" แบบไม่ต้องใช้อินเทอร์เน็ต เพื่อทดสอบว่าเบราว์เซอร์ของคุณวาดกราฟได้ปกติหรือไม่</p>
+        <!-- Chart Area: จัดให้อยู่ด้านบนสุดในมือถือ และอยู่ด้านขวาในคอมพิวเตอร์ -->
+        <div class="order-1 md:order-2 flex-grow relative bg-[#131722] h-[45vh] md:h-full shrink-0 border-b md:border-b-0 border-gray-800" id="chartContainer">
+            <!-- Loading Overlay -->
+            <div id="loadingOverlay" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#131722]/80 backdrop-blur-sm hidden">
+                <i class="ph-bold ph-circle-notch text-4xl text-blue-500 animate-spin mb-2"></i>
+                <p class="text-white text-xs font-medium animate-pulse" id="loadingText">กำลังดึงข้อมูลตลาด...</p>
+            </div>
+        </div>
+
+        <!-- Controls Sidebar: จัดให้อยู่ด้านล่างในมือถือ สามารถเลื่อนดูได้ -->
+        <aside class="order-2 md:order-1 glass-panel w-full md:w-80 p-4 flex flex-col gap-4 shrink-0 z-10 overflow-y-auto">
             
-            <button id="btnNewData" class="w-full bg-blue-600 active:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg shadow-lg mb-3">
-                🔄 สุ่มกราฟใหม่ (Refresh Data)
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">ค้นหาหุ้น (พิมพ์ชื่อหรือตัวย่อ)</label>
+                <div class="relative">
+                    <input type="text" list="stock-list" id="symbolInput" value="AAPL" placeholder="เช่น Apple, TSLA" class="w-full bg-[#131722] border border-gray-700 text-white rounded-lg px-3 py-2 text-base font-bold transition-all">
+                    <datalist id="stock-list"></datalist>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">ช่วงเวลา</label>
+                <select id="rangeSelect" class="w-full bg-[#131722] border border-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:border-blue-500 transition-colors cursor-pointer">
+                    <option value="3mo">3 เดือนย้อนหลัง</option>
+                    <option value="6mo">6 เดือนย้อนหลัง</option>
+                    <option value="1y" selected>1 ปี ย้อนหลัง</option>
+                    <option value="2y">2 ปี ย้อนหลัง</option>
+                </select>
+            </div>
+
+            <button id="loadBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2.5 rounded-lg transition-all shadow-lg flex justify-center items-center gap-2">
+                <i class="ph-bold ph-magnifying-glass"></i> ดูข้อมูลกราฟ
             </button>
 
-            <button id="btnToggleSR" class="w-full bg-gray-700 active:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg shadow-lg">
-                📏 เปิด/ปิด เส้นแนวรับ-แนวต้าน
-            </button>
-        </div>
-
-        <div class="bg-[#1e222d] p-4 rounded-lg">
-            <div class="flex justify-between mb-2">
-                <span class="text-gray-400">ราคาล่าสุด:</span>
-                <span id="txtClose" class="text-white font-bold">-</span>
+            <!-- กล่องแจ้งเตือน (Error/Warning) -->
+            <div id="msgBox" class="hidden text-xs p-3 rounded-lg flex items-start gap-2 border">
+                <i id="msgIcon" class="ph-fill text-base shrink-0 mt-0.5"></i>
+                <span id="msgText" class="leading-relaxed"></span>
             </div>
-            <div class="flex justify-between mb-2">
-                <span class="text-gray-400">แนวต้าน (ต้านขึ้น):</span>
-                <span id="txtRes" class="text-red-400 font-bold">-</span>
-            </div>
-            <div class="flex justify-between">
-                <span class="text-gray-400">แนวรับ (รับลง):</span>
-                <span id="txtSup" class="text-green-400 font-bold">-</span>
-            </div>
-        </div>
 
-        <!-- กล่องดักจับ Error (ถ้าโค้ดพัง จะโชว์ตรงนี้) -->
-        <div id="errorBox" class="mt-4 p-3 bg-red-900/50 border border-red-500 rounded-lg hidden">
-            <p class="text-red-400 font-bold text-sm">⚠️ พบปัญหาการทำงาน:</p>
-            <p id="errorText" class="text-red-300 text-xs mt-1 break-words"></p>
-        </div>
+            <hr class="border-gray-800 my-1">
 
-    </div>
+            <div class="flex flex-col gap-3">
+                <button id="toggleSR" class="flex items-center justify-between w-full bg-[#2a2e39] hover:bg-[#323744] border border-gray-700 text-white px-3 py-2.5 rounded-lg transition-all">
+                    <div class="flex items-center gap-2">
+                        <i class="ph ph-ruler text-lg text-blue-400"></i>
+                        <span class="font-medium text-xs md:text-sm" id="toggleSRText">ซ่อนแนวรับ-แนวต้าน</span>
+                    </div>
+                    <div id="toggleIndicator" class="w-10 h-5 bg-blue-500 rounded-full p-1 transition-colors relative">
+                        <div class="w-3 h-3 bg-white rounded-full absolute right-1 transition-all"></div>
+                    </div>
+                </button>
+
+                <div class="bg-[#131722] p-3 rounded-lg border border-gray-800">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-gray-500">ราคาปิดล่าสุด:</span>
+                        <span class="text-sm font-bold text-white" id="statClose">-</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-500">แนวต้านล่าสุด:</span>
+                        <span class="text-sm font-bold text-red-400" id="statRes">-</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-xs text-gray-500">แนวรับล่าสุด:</span>
+                        <span class="text-sm font-bold text-green-400" id="statSup">-</span>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+    </main>
 
     <script>
-        // ระบบดักจับ Error อัตโนมัติเผื่อมือถือมีปัญหา
+        // ดักจับ Error เผื่อมีเหตุขัดข้องอื่นๆ
         window.onerror = function(message, source, lineno, colno, error) {
-            document.getElementById('errorBox').classList.remove('hidden');
-            document.getElementById('errorText').innerText = message + " (Line: " + lineno + ")";
+            showMessage('error', message + " (Line: " + lineno + ")");
+        };
+
+        const popularStocks = {
+            "AAPL": "Apple", "MSFT": "Microsoft", "NVDA": "NVIDIA", "GOOGL": "Alphabet",
+            "AMZN": "Amazon", "META": "Meta", "TSLA": "Tesla", "SPY": "S&P 500 ETF"
         };
 
         let chart;
-        let series;
-        let chartData = [];
+        let candlestickSeries;
+        let currentData = [];
         let srLines = [];
         let isSRVisible = true;
 
-        // สร้างข้อมูลจำลองแบบสุ่ม (ไม่พึ่งพาเซิร์ฟเวอร์)
-        function generateData() {
+        function initChart() {
+            const container = document.getElementById('chartContainer');
+            chart = LightweightCharts.createChart(container, {
+                layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc' },
+                grid: { vertLines: { color: 'rgba(42, 46, 57, 0.3)' }, horzLines: { color: 'rgba(42, 46, 57, 0.3)' } },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                rightPriceScale: { borderColor: 'rgba(197, 203, 206, 0.4)' },
+                timeScale: { borderColor: 'rgba(197, 203, 206, 0.4)', timeVisible: false },
+            });
+
+            // สาเหตุที่พังในเวอร์ชันก่อนหน้าคือคำสั่งนี้หายไปในไลบรารีอัปเดตใหม่ ตอนนี้เราล็อกเวอร์ชันไว้แล้ว
+            candlestickSeries = chart.addCandlestickSeries({
+                upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
+                wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+            });
+
+            new ResizeObserver(entries => {
+                if (entries.length === 0 || entries[0].target !== container) return;
+                const newRect = entries[0].contentRect;
+                let h = newRect.height > 0 ? newRect.height : 300;
+                chart.applyOptions({ height: h, width: newRect.width });
+            }).observe(container);
+        }
+
+        async function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(id);
+                return response;
+            } catch (err) {
+                clearTimeout(id);
+                throw err;
+            }
+        }
+
+        async function fetchRealMarketData(symbol, range) {
+            const yfUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${range}`;
+            
+            const proxies = [
+                `https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`
+            ];
+
+            let yfData = null;
+            for (let proxyUrl of proxies) {
+                try {
+                    const response = await fetchWithTimeout(proxyUrl, {}, 6000);
+                    if (response.ok) {
+                        const text = await response.text();
+                        try {
+                            yfData = JSON.parse(text);
+                            if (yfData && yfData.chart && yfData.chart.result) break; 
+                        } catch(e) { continue; }
+                    }
+                } catch (err) { console.warn(`Proxy failed, trying next...`); }
+            }
+
+            if (!yfData || !yfData.chart || !yfData.chart.result || yfData.chart.result.length === 0) {
+                if(yfData && yfData.chart && yfData.chart.error) throw new Error(`ไม่พบหุ้น "${symbol}"`);
+                throw new Error('PROXY_FAILED');
+            }
+
+            const result = yfData.chart.result[0];
+            const timestamps = result.timestamp;
+            const quote = result.indicators.quote[0];
+            
+            let chartData = [];
+            for (let i = 0; i < timestamps.length; i++) {
+                if (quote.open[i] !== null && quote.close[i] !== null) {
+                    const dateStr = new Date(timestamps[i] * 1000).toISOString().split('T')[0];
+                    if(chartData.length > 0 && chartData[chartData.length-1].time === dateStr) continue;
+                    chartData.push({
+                        time: dateStr,
+                        open: parseFloat(quote.open[i].toFixed(2)), high: parseFloat(quote.high[i].toFixed(2)),
+                        low: parseFloat(quote.low[i].toFixed(2)), close: parseFloat(quote.close[i].toFixed(2))
+                    });
+                }
+            }
+            return chartData;
+        }
+
+        // ฟังก์ชันสร้างข้อมูลจำลองกรณี API ล่ม
+        function generateMockData(days = 150) {
             let data = [];
+            let price = 150 + (Math.random() * 50);
             let time = new Date();
-            time.setDate(time.getDate() - 150);
-            let price = 100 + Math.random() * 50;
+            time.setDate(time.getDate() - days);
 
-            for (let i = 0; i < 150; i++) {
-                time.setDate(time.getDate() + 1);
-                if (time.getDay() === 0 || time.getDay() === 6) continue; // ข้ามเสาร์-อาทิตย์
-                
+            for (let i = 0; i < days; i++) {
+                if (time.getDay() === 0 || time.getDay() === 6) { time.setDate(time.getDate() + 1); continue; }
                 let open = price;
-                let change = open * 0.05 * (Math.random() - 0.48); // สุ่มความผันผวน
+                let change = open * 0.03 * (Math.random() - 0.48);
                 let close = open + change;
-                let max = Math.max(open, close);
-                let min = Math.min(open, close);
-                let high = max + (Math.random() * 3);
-                let low = min - (Math.random() * 3);
-
-                // แปลงวันที่เป็น YYYY-MM-DD
-                let y = time.getFullYear();
-                let m = String(time.getMonth() + 1).padStart(2, '0');
-                let d = String(time.getDate()).padStart(2, '0');
-
-                data.push({ time: `${y}-${m}-${d}`, open, high, low, close });
+                let high = Math.max(open, close) + (Math.abs(change) * Math.random());
+                let low = Math.min(open, close) - (Math.abs(change) * Math.random());
+                
+                data.push({
+                    time: time.toISOString().split('T')[0],
+                    open: parseFloat(open.toFixed(2)), high: parseFloat(high.toFixed(2)),
+                    low: parseFloat(low.toFixed(2)), close: parseFloat(close.toFixed(2))
+                });
                 price = close;
+                time.setDate(time.getDate() + 1);
             }
             return data;
         }
 
-        // เริ่มต้นสร้างกราฟ
-        function initChart() {
-            const container = document.getElementById('chartContainer');
-            
-            // กำหนดขนาดให้ชัดเจนตามกล่อง
-            chart = LightweightCharts.createChart(container, {
-                width: container.clientWidth,
-                height: container.clientHeight,
-                layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc' },
-                grid: { vertLines: { color: '#2a2e39' }, horzLines: { color: '#2a2e39' } },
-                timeScale: { timeVisible: true }
-            });
-
-            series = chart.addCandlestickSeries({
-                upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
-                wickUpColor: '#26a69a', wickDownColor: '#ef5350'
-            });
-
-            // ปรับขนาดเวลากลับหน้าจอ (หมุนจอ)
-            window.addEventListener('resize', () => {
-                chart.resize(container.clientWidth, container.clientHeight);
-            });
-        }
-
-        // คำนวณแนวรับแนวต้านแบบง่ายๆ
-        function calcSR(data) {
-            let res = [], sup = [];
-            let lookback = 10;
+        function calculateSupportResistance(data) {
+            let levels = [];
+            let lookback = 12; 
             for (let i = lookback; i < data.length - lookback; i++) {
-                let isH = true, isL = true;
+                let isSwingHigh = true; let isSwingLow = true;
                 for (let j = 1; j <= lookback; j++) {
-                    if (data[i-j].high > data[i].high || data[i+j].high > data[i].high) isH = false;
-                    if (data[i-j].low < data[i].low || data[i+j].low < data[i].low) isL = false;
+                    if (data[i - j].high > data[i].high || data[i + j].high > data[i].high) isSwingHigh = false;
+                    if (data[i - j].low < data[i].low || data[i + j].low < data[i].low) isSwingLow = false;
                 }
-                if (isH) res.push(data[i].high);
-                if (isL) sup.push(data[i].low);
+                if (isSwingHigh) levels.push({ type: 'resistance', price: data[i].high });
+                if (isSwingLow) levels.push({ type: 'support', price: data[i].low });
             }
-            // คืนค่าเส้นล่าสุด 2 เส้น
-            return { res: res.slice(-2), sup: sup.slice(-2) };
+            let filteredLevels = [];
+            levels.reverse().forEach(level => {
+                if (!filteredLevels.some(f => f.type === level.type && Math.abs(f.price - level.price) / f.price < 0.025)) {
+                    filteredLevels.push(level);
+                }
+            });
+            let supports = filteredLevels.filter(l => l.type === 'support').slice(0, 2).map(l => l.price);
+            let resistances = filteredLevels.filter(l => l.type === 'resistance').slice(0, 2).map(l => l.price);
+            return { supports, resistances };
         }
 
-        // วาดกราฟและเส้น
-        function updateChart() {
-            try {
-                // เคลียร์เส้นเก่า
-                srLines.forEach(l => series.removePriceLine(l));
-                srLines = [];
+        function drawSRLines() {
+            srLines.forEach(line => candlestickSeries.removePriceLine(line));
+            srLines = [];
+            document.getElementById('statRes').innerText = '-';
+            document.getElementById('statSup').innerText = '-';
 
-                // อัปเดตข้อมูลกราฟ
-                chartData = generateData();
-                series.setData(chartData);
-                chart.timeScale().fitContent();
+            if (!isSRVisible || currentData.length === 0) return;
 
-                let lastClose = chartData[chartData.length - 1].close;
-                document.getElementById('txtClose').innerText = lastClose.toFixed(2);
+            const { supports, resistances } = calculateSupportResistance(currentData);
 
-                // วาดเส้นแนวรับแนวต้าน
-                if (isSRVisible) {
-                    let { res, sup } = calcSR(chartData);
-                    
-                    res.forEach(p => {
-                        let l = series.createPriceLine({ price: p, color: '#ff5252', lineWidth: 2, lineStyle: 2, title: 'Res' });
-                        srLines.push(l);
-                    });
-                    sup.forEach(p => {
-                        let l = series.createPriceLine({ price: p, color: '#00e676', lineWidth: 2, lineStyle: 2, title: 'Sup' });
-                        srLines.push(l);
-                    });
+            supports.forEach(price => {
+                const line = candlestickSeries.createPriceLine({
+                    price: price, color: '#00e676', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'Support',
+                });
+                srLines.push(line);
+            });
+            resistances.forEach(price => {
+                const line = candlestickSeries.createPriceLine({
+                    price: price, color: '#ff5252', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'Resistance',
+                });
+                srLines.push(line);
+            });
 
-                    document.getElementById('txtRes').innerText = res.length > 0 ? Math.min(...res).toFixed(2) : '-';
-                    document.getElementById('txtSup').innerText = sup.length > 0 ? Math.max(...sup).toFixed(2) : '-';
-                } else {
-                    document.getElementById('txtRes').innerText = '-';
-                    document.getElementById('txtSup').innerText = '-';
-                }
+            if(resistances.length > 0) document.getElementById('statRes').innerText = Math.min(...resistances).toFixed(2);
+            if(supports.length > 0) document.getElementById('statSup').innerText = Math.max(...supports).toFixed(2);
+        }
 
-            } catch (err) {
-                // ฟ้อง Error ขึ้นหน้าจอ
-                document.getElementById('errorBox').classList.remove('hidden');
-                document.getElementById('errorText').innerText = err.toString();
+        function showMessage(type, text) {
+            const msgBox = document.getElementById('msgBox');
+            msgBox.className = 'text-xs p-3 rounded-lg flex items-start gap-2 border'; // reset
+            msgBox.classList.remove('hidden');
+            document.getElementById('msgText').innerText = text;
+
+            if (type === 'error') {
+                msgBox.classList.add('bg-red-900/30', 'border-red-500/50', 'text-red-400');
+                document.getElementById('msgIcon').className = 'ph-fill ph-warning-circle text-base mt-0.5 text-red-500';
+            } else if (type === 'warning') {
+                msgBox.classList.add('bg-yellow-900/30', 'border-yellow-500/50', 'text-yellow-400');
+                document.getElementById('msgIcon').className = 'ph-fill ph-warning text-base mt-0.5 text-yellow-500';
             }
         }
 
-        // ผูกปุ่มกด
-        document.addEventListener('DOMContentLoaded', () => {
-            initChart();
-            updateChart(); // วาดกราฟทันทีตอนเปิดหน้าเว็บ
+        async function loadStock() {
+            const symbolInput = document.getElementById('symbolInput');
+            let rawSymbol = symbolInput.value.trim().toUpperCase();
+            if(!rawSymbol) return;
 
-            document.getElementById('btnNewData').addEventListener('click', updateChart);
+            let symbol = rawSymbol.split(' ')[0]; 
+            symbolInput.value = symbol; 
+
+            const range = document.getElementById('rangeSelect').value;
+            const overlay = document.getElementById('loadingOverlay');
             
-            document.getElementById('btnToggleSR').addEventListener('click', () => {
+            document.getElementById('msgBox').classList.add('hidden');
+            overlay.classList.remove('hidden');
+            document.getElementById('statClose').innerText = '-';
+
+            try {
+                currentData = await fetchRealMarketData(symbol, range);
+                candlestickSeries.setData(currentData);
+                chart.timeScale().fitContent(); 
+                document.getElementById('statClose').innerText = currentData[currentData.length - 1].close.toFixed(2);
+                drawSRLines();
+            } catch (err) {
+                console.error(err);
+                if (err.message === 'PROXY_FAILED') {
+                    // ใช้ข้อมูลจำลองชั่วคราวเพื่อให้กราฟไม่ว่างเปล่า
+                    currentData = generateMockData(200);
+                    candlestickSeries.setData(currentData);
+                    chart.timeScale().fitContent();
+                    document.getElementById('statClose').innerText = currentData[currentData.length - 1].close.toFixed(2);
+                    drawSRLines();
+                    showMessage('warning', 'Proxy ดึงข้อมูลขัดข้องชั่วคราว แสดงเป็นข้อมูลจำลองเพื่อการทดสอบครับ');
+                } else {
+                    showMessage('error', err.message);
+                }
+            } finally {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dataList = document.getElementById('stock-list');
+            for (const [ticker, name] of Object.entries(popularStocks)) {
+                const option = document.createElement('option');
+                option.value = ticker;
+                option.text = name;
+                dataList.appendChild(option);
+            }
+
+            initChart();
+            setTimeout(loadStock, 300);
+
+            document.getElementById('loadBtn').addEventListener('click', loadStock);
+            document.getElementById('symbolInput').addEventListener('keypress', (e) => {
+                if(e.key === 'Enter') { e.target.blur(); loadStock(); }
+            });
+            document.getElementById('rangeSelect').addEventListener('change', loadStock);
+
+            document.getElementById('toggleSR').addEventListener('click', () => {
                 isSRVisible = !isSRVisible;
-                updateChart(); // สั่งวาดใหม่
+                const ind = document.getElementById('toggleIndicator');
+                const dot = ind.querySelector('div');
+                const text = document.getElementById('toggleSRText');
+
+                if (isSRVisible) {
+                    ind.className = 'w-10 h-5 bg-blue-500 rounded-full p-1 transition-colors relative';
+                    dot.className = 'w-3 h-3 bg-white rounded-full absolute right-1 transition-all';
+                    text.innerText = 'ซ่อนแนวรับ-แนวต้าน';
+                } else {
+                    ind.className = 'w-10 h-5 bg-gray-600 rounded-full p-1 transition-colors relative';
+                    dot.className = 'w-3 h-3 bg-white rounded-full absolute left-1 transition-all';
+                    text.innerText = 'แสดงแนวรับ-แนวต้าน';
+                }
+                drawSRLines();
             });
         });
-
     </script>
 </body>
 </html>
