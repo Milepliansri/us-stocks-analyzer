@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>US Stocks Pro | Advanced Terminal</title>
+    <!-- โหลด Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- ล็อกเวอร์ชัน TradingView ที่ 4.1.1 -->
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     
+    <!-- โหลด Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         body { background-color: #0a0e17; color: #d1d5db; font-family: 'Inter', sans-serif; height: 100dvh; overflow: hidden; margin: 0;}
@@ -18,10 +21,17 @@
         input:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
         .positive-text { color: #00e676; }
         .negative-text { color: #ff5252; }
+        
+        /* สไตล์สำหรับ Tabs */
+        .tab-btn { transition: all 0.2s ease-in-out; }
+        .tab-btn.active { background-color: #2563eb; color: white; border-color: #3b82f6; }
+        .tab-btn.inactive { background-color: transparent; color: #9ca3af; border-color: transparent; }
+        .tab-btn.inactive:hover { background-color: #1e2532; color: #d1d5db; }
     </style>
 </head>
 <body class="w-full h-full flex flex-col text-sm md:text-base">
 
+    <!-- Top Navigation / Toolbar -->
     <header class="bg-[#151a24] w-full flex flex-col md:flex-row items-center justify-between px-4 py-3 z-20 shrink-0 border-b border-gray-800 gap-4 md:gap-0 shadow-md">
         <div class="flex items-center gap-3 w-full md:w-auto">
             <div class="bg-blue-600/20 p-2 rounded-lg">
@@ -51,76 +61,131 @@
         </div>
     </header>
 
+    <!-- Main Workspace -->
     <main class="flex-grow flex flex-col md:flex-row relative overflow-hidden">
         
-        <aside class="order-2 md:order-1 glass-panel w-full md:w-[320px] p-4 flex flex-col gap-5 shrink-0 z-10 overflow-y-auto">
+        <!-- Sidebar -->
+        <aside class="order-2 md:order-1 glass-panel w-full md:w-[340px] flex flex-col shrink-0 z-10 overflow-hidden">
             
-            <div class="bg-[#0a0e17] p-4 rounded-xl border border-gray-800 shadow-inner">
-                <div class="flex justify-between items-start mb-2">
-                    <h2 class="text-xl font-black text-white" id="statSymbol">AAPL</h2>
-                    <span class="text-xs px-2 py-1 bg-gray-800 rounded text-gray-300" id="statDate">-</span>
-                </div>
-                <div class="flex items-end gap-2 mb-1">
-                    <span class="text-3xl font-bold text-white leading-none" id="statClose">-</span>
-                    <span class="text-sm font-medium mb-1" id="statChange">-</span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800">
-                    <p class="text-[10px] text-gray-500 uppercase">ราคาเปิด (Open)</p>
-                    <p class="text-sm font-semibold text-white mt-1" id="statOpen">-</p>
-                </div>
-                <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800">
-                    <p class="text-[10px] text-gray-500 uppercase">ปริมาณ (Volume)</p>
-                    <p class="text-sm font-semibold text-white mt-1" id="statVol">-</p>
-                </div>
-                <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800">
-                    <p class="text-[10px] text-gray-500 uppercase">สูงสุด (High)</p>
-                    <p class="text-sm font-semibold text-white mt-1" id="statHigh">-</p>
-                </div>
-                <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800">
-                    <p class="text-[10px] text-gray-500 uppercase">ต่ำสุด (Low)</p>
-                    <p class="text-sm font-semibold text-white mt-1" id="statLow">-</p>
-                </div>
-            </div>
-
-            <hr class="border-gray-800 border-dashed">
-
-            <div class="flex flex-col gap-3">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">ระบบวิเคราะห์เทคนิค</h3>
-                </div>
-                
-                <button id="toggleSR" class="flex items-center justify-between w-full bg-[#1e2532] hover:bg-[#252d3d] border border-gray-700 text-white px-3 py-2.5 rounded-lg transition-all">
-                    <div class="flex items-center gap-2">
-                        <i class="ph-bold ph-line-segments text-blue-400"></i>
-                        <span class="font-medium text-xs" id="toggleSRText">เส้นแนวรับ-แนวต้าน</span>
-                    </div>
-                    <div id="toggleIndicator" class="w-8 h-4 bg-blue-500 rounded-full p-0.5 transition-colors relative">
-                        <div class="w-3 h-3 bg-white rounded-full absolute right-0.5 transition-all"></div>
-                    </div>
+            <!-- Tabs Header -->
+            <div class="flex p-2 gap-1 border-b border-gray-800 shrink-0">
+                <button onclick="switchTab('stats')" id="tab-stats" class="tab-btn active flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md border text-center">
+                    <i class="ph-bold ph-chart-bar mr-1"></i> สถิติ & เทคนิค
                 </button>
+                <button onclick="switchTab('profile')" id="tab-profile" class="tab-btn inactive flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md border text-center">
+                    <i class="ph-bold ph-buildings mr-1"></i> ข้อมูลบริษัท
+                </button>
+            </div>
 
-                <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800 flex flex-col gap-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-500 flex items-center gap-1"><i class="ph-fill ph-arrow-circle-up text-red-500"></i> แนวต้าน:</span>
-                        <span class="text-sm font-bold text-red-400" id="statRes">-</span>
+            <!-- Scrollable Content Area -->
+            <div class="p-4 flex flex-col gap-5 overflow-y-auto flex-grow">
+                
+                <!-- Tab 1: Stats & Technical -->
+                <div id="content-stats" class="flex flex-col gap-5">
+                    <!-- Price Summary -->
+                    <div class="bg-[#0a0e17] p-4 rounded-xl border border-gray-800 shadow-inner relative overflow-hidden">
+                        <div class="absolute -right-4 -top-4 opacity-10"><i class="ph-fill ph-chart-line-up text-8xl text-blue-500"></i></div>
+                        <div class="flex justify-between items-start mb-2 relative z-10">
+                            <h2 class="text-2xl font-black text-white" id="statSymbol">AAPL</h2>
+                            <span class="text-xs px-2 py-1 bg-gray-800 rounded text-gray-300" id="statDate">-</span>
+                        </div>
+                        <div class="flex items-end gap-2 mb-1 relative z-10">
+                            <span class="text-3xl font-bold text-white leading-none" id="statClose">-</span>
+                            <span class="text-sm font-medium mb-1" id="statChange">-</span>
+                        </div>
                     </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-500 flex items-center gap-1"><i class="ph-fill ph-arrow-circle-down text-green-500"></i> แนวรับ:</span>
-                        <span class="text-sm font-bold text-green-400" id="statSup">-</span>
+
+                    <!-- Detailed Stats Grid -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800">
+                            <p class="text-[10px] text-gray-500 uppercase">ราคาเปิด (Open)</p>
+                            <p class="text-sm font-semibold text-white mt-1" id="statOpen">-</p>
+                        </div>
+                        <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800">
+                            <p class="text-[10px] text-gray-500 uppercase">ปริมาณ (Volume)</p>
+                            <p class="text-sm font-semibold text-white mt-1" id="statVol">-</p>
+                        </div>
+                        <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800">
+                            <p class="text-[10px] text-gray-500 uppercase">สูงสุด (High)</p>
+                            <p class="text-sm font-semibold text-white mt-1" id="statHigh">-</p>
+                        </div>
+                        <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800">
+                            <p class="text-[10px] text-gray-500 uppercase">ต่ำสุด (Low)</p>
+                            <p class="text-sm font-semibold text-white mt-1" id="statLow">-</p>
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-800 border-dashed">
+
+                    <!-- Technical Panel -->
+                    <div class="flex flex-col gap-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">ระบบวิเคราะห์เทคนิค</h3>
+                            <div class="text-[10px] bg-blue-900/40 text-blue-400 px-2 py-1 rounded">RSI (14): <strong id="statRSI">-</strong></div>
+                        </div>
+                        
+                        <button id="toggleSR" class="flex items-center justify-between w-full bg-[#1e2532] hover:bg-[#252d3d] border border-gray-700 text-white px-3 py-2.5 rounded-lg transition-all">
+                            <div class="flex items-center gap-2">
+                                <i class="ph-bold ph-line-segments text-blue-400"></i>
+                                <span class="font-medium text-xs" id="toggleSRText">เส้นแนวรับ-แนวต้าน</span>
+                            </div>
+                            <div id="toggleIndicator" class="w-8 h-4 bg-blue-500 rounded-full p-0.5 transition-colors relative">
+                                <div class="w-3 h-3 bg-white rounded-full absolute right-0.5 transition-all"></div>
+                            </div>
+                        </button>
+
+                        <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800 flex flex-col gap-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-500 flex items-center gap-1"><i class="ph-fill ph-arrow-circle-up text-red-500"></i> แนวต้านล่าสุด:</span>
+                                <span class="text-sm font-bold text-red-400" id="statRes">-</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-500 flex items-center gap-1"><i class="ph-fill ph-arrow-circle-down text-green-500"></i> แนวรับล่าสุด:</span>
+                                <span class="text-sm font-bold text-green-400" id="statSup">-</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="msgBox" class="hidden text-xs p-3 rounded-lg flex items-start gap-2 border mt-auto">
-                <i id="msgIcon" class="ph-fill text-base shrink-0 mt-0.5"></i>
-                <span id="msgText" class="leading-relaxed"></span>
-            </div>
+                <!-- Tab 2: Company Profile -->
+                <div id="content-profile" class="hidden flex-col gap-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-700 text-white font-bold text-xl" id="profileLogo">A</div>
+                        <div>
+                            <h2 class="text-lg font-bold text-white leading-tight" id="profileName">Apple Inc.</h2>
+                            <p class="text-xs text-blue-400 font-medium" id="profileExchange">NASDAQ</p>
+                        </div>
+                    </div>
 
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800">
+                            <p class="text-[10px] text-gray-500 uppercase">กลุ่มอุตสาหกรรม</p>
+                            <p class="text-xs font-semibold text-white mt-1" id="profileSector">Technology</p>
+                        </div>
+                        <div class="bg-[#0a0e17] p-3 rounded-xl border border-gray-800">
+                            <p class="text-[10px] text-gray-500 uppercase">ประเภทธุรกิจ</p>
+                            <p class="text-xs font-semibold text-white mt-1" id="profileIndustry">Consumer Electronics</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#0a0e17] p-4 rounded-xl border border-gray-800 mt-2">
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1"><i class="ph-fill ph-info"></i> ข้อมูลบริษัทเบื้องต้น</h3>
+                        <p class="text-xs text-gray-300 leading-relaxed text-justify" id="profileDesc">
+                            Apple Inc. ออกแบบ ผลิต และจำหน่ายสมาร์ทโฟน คอมพิวเตอร์ส่วนบุคคล แท็บเล็ต อุปกรณ์สวมใส่ และอุปกรณ์เสริมต่างๆ ทั่วโลก เป็นหนึ่งในบริษัทเทคโนโลยีที่ใหญ่ที่สุดในโลก...
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Message Box (Alerts) -->
+                <div id="msgBox" class="hidden text-xs p-3 rounded-lg flex items-start gap-2 border mt-auto shrink-0">
+                    <i id="msgIcon" class="ph-fill text-base shrink-0 mt-0.5"></i>
+                    <span id="msgText" class="leading-relaxed"></span>
+                </div>
+
+            </div>
         </aside>
 
+        <!-- Chart Area -->
         <div class="order-1 md:order-2 flex-grow relative bg-[#0a0e17] h-[55vh] md:h-full shrink-0" id="chartContainer">
             <div id="loadingOverlay" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0e17]/80 backdrop-blur-sm hidden">
                 <div class="relative w-16 h-16 flex items-center justify-center mb-3">
@@ -135,24 +200,48 @@
     </main>
 
     <script>
-        // ดักจับ Error
-        window.onerror = function(message, source, lineno, colno, error) {
-            showMessage('error', message + " (Line: " + lineno + ")");
+        // ฐานข้อมูลบริษัทเบื้องต้น
+        const companyDB = {
+            "AAPL": { name: "Apple Inc.", exchange: "NASDAQ", sector: "Technology", industry: "Consumer Electronics", desc: "บริษัทเทคโนโลยีระดับโลก ผู้ออกแบบและจำหน่าย iPhone, iPad, Mac และให้บริการดิจิทัล เช่น App Store, Apple Music และ iCloud" },
+            "MSFT": { name: "Microsoft Corporation", exchange: "NASDAQ", sector: "Technology", industry: "Software - Infrastructure", desc: "ผู้พัฒนาซอฟต์แวร์ระดับโลก เป็นที่รู้จักจากระบบปฏิบัติการ Windows, ชุดโปรแกรม Office และผู้ให้บริการคลาวด์ Azure" },
+            "NVDA": { name: "NVIDIA Corporation", exchange: "NASDAQ", sector: "Technology", industry: "Semiconductors", desc: "ผู้นำด้านการออกแบบหน่วยประมวลผลกราฟิก (GPU) สำหรับเกมเมอร์และการประมวลผล AI ระดับองค์กร" },
+            "GOOGL": { name: "Alphabet Inc.", exchange: "NASDAQ", sector: "Communication Services", industry: "Internet Content & Information", desc: "บริษัทแม่ของ Google ให้บริการค้นหาข้อมูลบนอินเทอร์เน็ต, YouTube, ระบบปฏิบัติการ Android และบริการโฆษณาออนไลน์" },
+            "AMZN": { name: "Amazon.com, Inc.", exchange: "NASDAQ", sector: "Consumer Cyclical", industry: "Internet Retail", desc: "แพลตฟอร์มอีคอมเมิร์ซที่ใหญ่ที่สุดในโลก และเป็นผู้นำตลาดด้านการให้บริการคลาวด์คอมพิวติ้งผ่าน AWS" },
+            "META": { name: "Meta Platforms, Inc.", exchange: "NASDAQ", sector: "Communication Services", industry: "Internet Content", desc: "ผู้ให้บริการโซเชียลมีเดียระดับโลก เป็นเจ้าของแพลตฟอร์ม Facebook, Instagram, WhatsApp และผู้พัฒนาเทคโนโลยี VR" },
+            "TSLA": { name: "Tesla, Inc.", exchange: "NASDAQ", sector: "Consumer Cyclical", industry: "Auto Manufacturers", desc: "ผู้นำการผลิตรถยนต์ไฟฟ้า (EV) และระบบกักเก็บพลังงานสะอาด รวมถึงแผงโซลาร์เซลล์" },
+            "SPY": { name: "SPDR S&P 500 ETF Trust", exchange: "NYSE Arca", sector: "Financial", industry: "Exchange Traded Fund", desc: "กองทุนรวมดัชนี (ETF) ที่ติดตามผลตอบแทนของดัชนี S&P 500 ซึ่งประกอบด้วยหุ้นของบริษัทขนาดใหญ่ 500 แห่งในสหรัฐอเมริกา" }
         };
 
-        const popularStocks = {
-            "AAPL": "Apple", "MSFT": "Microsoft", "NVDA": "NVIDIA", "GOOGL": "Alphabet",
-            "AMZN": "Amazon", "META": "Meta", "TSLA": "Tesla", "SPY": "S&P 500 ETF"
-        };
+        const popularStocks = Object.keys(companyDB).reduce((acc, key) => { acc[key] = companyDB[key].name; return acc; }, {});
 
-        let chart;
-        let candlestickSeries;
-        let volumeSeries;
-        let sma20Series;
-        let sma50Series;
+        let chart, candlestickSeries, volumeSeries, sma20Series, sma50Series;
         let currentCandleData = [];
         let srLines = [];
         let isSRVisible = true;
+
+        // ระบบเปลี่ยนหน้า Tab
+        function switchTab(tabName) {
+            const btnStats = document.getElementById('tab-stats');
+            const btnProfile = document.getElementById('tab-profile');
+            const contentStats = document.getElementById('content-stats');
+            const contentProfile = document.getElementById('content-profile');
+
+            if (tabName === 'stats') {
+                btnStats.className = "tab-btn active flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md border text-center";
+                btnProfile.className = "tab-btn inactive flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md border text-center";
+                contentStats.classList.remove('hidden');
+                contentStats.classList.add('flex');
+                contentProfile.classList.add('hidden');
+                contentProfile.classList.remove('flex');
+            } else {
+                btnProfile.className = "tab-btn active flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md border text-center";
+                btnStats.className = "tab-btn inactive flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-md border text-center";
+                contentProfile.classList.remove('hidden');
+                contentProfile.classList.add('flex');
+                contentStats.classList.add('hidden');
+                contentStats.classList.remove('flex');
+            }
+        }
 
         function initChart() {
             const container = document.getElementById('chartContainer');
@@ -164,97 +253,54 @@
                 timeScale: { borderColor: 'rgba(75, 85, 99, 0.4)', timeVisible: false },
             });
 
-            // Series หลัก (แท่งเทียน)
             candlestickSeries = chart.addCandlestickSeries({
-                upColor: '#00e676', downColor: '#ff5252', borderVisible: false,
-                wickUpColor: '#00e676', wickDownColor: '#ff5252',
+                upColor: '#00e676', downColor: '#ff5252', borderVisible: false, wickUpColor: '#00e676', wickDownColor: '#ff5252',
             });
 
-            // Series เส้นค่าเฉลี่ย SMA 20, 50
             sma20Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 1, title: 'SMA 20', crosshairMarkerVisible: false });
             sma50Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1, title: 'SMA 50', crosshairMarkerVisible: false });
 
-            // Series ปริมาณการซื้อขาย (Volume) ให้ซ้อนอยู่ด้านล่าง
-            volumeSeries = chart.addHistogramSeries({
-                priceFormat: { type: 'volume' },
-                priceScaleId: '', // ซ่อนแกนราคาของตัวเอง
-            });
-            volumeSeries.priceScale().applyOptions({
-                scaleMargins: { top: 0.8, bottom: 0 }, // ให้อยู่ 20% ล่างสุดของกราฟ
-            });
+            volumeSeries = chart.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: '' });
+            volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
             new ResizeObserver(entries => {
                 if (entries.length === 0 || entries[0].target !== container) return;
                 const newRect = entries[0].contentRect;
-                let h = newRect.height > 0 ? newRect.height : 300;
-                chart.applyOptions({ height: h, width: newRect.width });
+                chart.applyOptions({ height: newRect.height > 0 ? newRect.height : 300, width: newRect.width });
             }).observe(container);
-        }
-
-        async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), timeoutMs);
-            try {
-                const response = await fetch(url, { ...options, signal: controller.signal });
-                clearTimeout(id);
-                return response;
-            } catch (err) {
-                clearTimeout(id);
-                throw err;
-            }
         }
 
         async function fetchRealMarketData(symbol, range) {
             const yfUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${range}`;
-            
-            const proxies = [
-                `https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,
-                `https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`
-            ];
+            const proxies = [`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`, `https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`];
 
             let yfData = null;
             for (let proxyUrl of proxies) {
                 try {
-                    const response = await fetchWithTimeout(proxyUrl, {}, 8000);
+                    const controller = new AbortController();
+                    const id = setTimeout(() => controller.abort(), 8000);
+                    const response = await fetch(proxyUrl, { signal: controller.signal });
+                    clearTimeout(id);
                     if (response.ok) {
                         const text = await response.text();
-                        try {
-                            yfData = JSON.parse(text);
-                            if (yfData && yfData.chart && yfData.chart.result) break; 
-                        } catch(e) { continue; }
+                        try { yfData = JSON.parse(text); if (yfData?.chart?.result) break; } catch(e) {}
                     }
-                } catch (err) { console.warn(`Proxy failed, trying next...`); }
+                } catch (err) {}
             }
 
-            if (!yfData || !yfData.chart || !yfData.chart.result || yfData.chart.result.length === 0) {
-                if(yfData && yfData.chart && yfData.chart.error) throw new Error(`ไม่พบหุ้น "${symbol}"`);
-                throw new Error('PROXY_FAILED');
-            }
+            if (!yfData?.chart?.result?.[0]) throw new Error(yfData?.chart?.error ? `ไม่พบหุ้น "${symbol}"` : 'PROXY_FAILED');
 
             const result = yfData.chart.result[0];
-            const timestamps = result.timestamp;
             const quote = result.indicators.quote[0];
-            
-            let cData = [];
-            let vData = [];
+            let cData = [], vData = [];
 
-            for (let i = 0; i < timestamps.length; i++) {
-                if (quote.open[i] !== null && quote.close[i] !== null) {
-                    const dateStr = new Date(timestamps[i] * 1000).toISOString().split('T')[0];
+            for (let i = 0; i < result.timestamp.length; i++) {
+                if (quote.open[i] !== null) {
+                    const dateStr = new Date(result.timestamp[i] * 1000).toISOString().split('T')[0];
                     if(cData.length > 0 && cData[cData.length-1].time === dateStr) continue;
-                    
-                    let open = parseFloat(quote.open[i].toFixed(2));
-                    let high = parseFloat(quote.high[i].toFixed(2));
-                    let low = parseFloat(quote.low[i].toFixed(2));
-                    let close = parseFloat(quote.close[i].toFixed(2));
-                    let vol = quote.volume[i] || 0;
-
-                    cData.push({ time: dateStr, open: open, high: high, low: low, close: close });
-                    vData.push({ 
-                        time: dateStr, 
-                        value: vol, 
-                        color: close >= open ? 'rgba(0, 230, 118, 0.4)' : 'rgba(255, 82, 82, 0.4)' 
-                    });
+                    let c = parseFloat(quote.close[i].toFixed(2)), o = parseFloat(quote.open[i].toFixed(2));
+                    cData.push({ time: dateStr, open: o, high: parseFloat(quote.high[i].toFixed(2)), low: parseFloat(quote.low[i].toFixed(2)), close: c });
+                    vData.push({ time: dateStr, value: quote.volume[i] || 0, color: c >= o ? 'rgba(0, 230, 118, 0.4)' : 'rgba(255, 82, 82, 0.4)' });
                 }
             }
             return { cData, vData };
@@ -262,157 +308,151 @@
 
         function calculateSMA(data, period) {
             let sma = [];
-            for (let i = 0; i < data.length; i++) {
-                if (i < period - 1) continue;
+            for (let i = period - 1; i < data.length; i++) {
                 let sum = 0;
-                for (let j = 0; j < period; j++) {
-                    sum += data[i - j].close;
-                }
+                for (let j = 0; j < period; j++) sum += data[i - j].close;
                 sma.push({ time: data[i].time, value: parseFloat((sum / period).toFixed(2)) });
             }
             return sma;
         }
 
+        // คำนวณ RSI (Relative Strength Index)
+        function calculateRSI(data, period = 14) {
+            if (data.length <= period) return '-';
+            let gains = 0, losses = 0;
+            
+            for (let i = 1; i <= period; i++) {
+                let diff = data[i].close - data[i - 1].close;
+                if (diff >= 0) gains += diff; else losses -= diff;
+            }
+            
+            let avgGain = gains / period;
+            let avgLoss = losses / period;
+            
+            for (let i = period + 1; i < data.length; i++) {
+                let diff = data[i].close - data[i - 1].close;
+                let currentGain = diff >= 0 ? diff : 0;
+                let currentLoss = diff < 0 ? -diff : 0;
+                avgGain = ((avgGain * (period - 1)) + currentGain) / period;
+                avgLoss = ((avgLoss * (period - 1)) + currentLoss) / period;
+            }
+            
+            if (avgLoss === 0) return 100;
+            let rs = avgGain / avgLoss;
+            return (100 - (100 / (1 + rs))).toFixed(2);
+        }
+
+        // สำหรับสร้างข้อมูลจำลองเมื่อ API ล่ม
         function generateMockData(days = 150) {
-            let cData = [];
-            let vData = [];
-            let price = 150 + (Math.random() * 50);
-            let time = new Date();
+            let cData = [], vData = [], price = 150 + (Math.random() * 50), time = new Date();
             time.setDate(time.getDate() - days);
 
             for (let i = 0; i < days; i++) {
                 if (time.getDay() === 0 || time.getDay() === 6) { time.setDate(time.getDate() + 1); continue; }
-                let open = price;
-                let change = open * 0.03 * (Math.random() - 0.48);
-                let close = open + change;
-                let high = Math.max(open, close) + (Math.abs(change) * Math.random());
-                let low = Math.min(open, close) - (Math.abs(change) * Math.random());
-                let vol = Math.floor(Math.random() * 50000000) + 10000000;
-                
+                let open = price, change = open * 0.03 * (Math.random() - 0.48), close = open + change;
                 let dateStr = time.toISOString().split('T')[0];
-                cData.push({ time: dateStr, open: parseFloat(open.toFixed(2)), high: parseFloat(high.toFixed(2)), low: parseFloat(low.toFixed(2)), close: parseFloat(close.toFixed(2)) });
-                vData.push({ time: dateStr, value: vol, color: close >= open ? 'rgba(0, 230, 118, 0.4)' : 'rgba(255, 82, 82, 0.4)' });
-                
-                price = close;
-                time.setDate(time.getDate() + 1);
+                cData.push({ time: dateStr, open: parseFloat(open.toFixed(2)), high: parseFloat((Math.max(open, close) + Math.abs(change) * Math.random()).toFixed(2)), low: parseFloat((Math.min(open, close) - Math.abs(change) * Math.random()).toFixed(2)), close: parseFloat(close.toFixed(2)) });
+                vData.push({ time: dateStr, value: Math.floor(Math.random() * 50000000) + 10000000, color: close >= open ? 'rgba(0, 230, 118, 0.4)' : 'rgba(255, 82, 82, 0.4)' });
+                price = close; time.setDate(time.getDate() + 1);
             }
             return { cData, vData };
         }
 
         function calculateSupportResistance(data) {
-            let levels = [];
-            let lookback = 12; 
+            let levels = [], lookback = 12; 
             for (let i = lookback; i < data.length - lookback; i++) {
-                let isSwingHigh = true; let isSwingLow = true;
+                let isSwingHigh = true, isSwingLow = true;
                 for (let j = 1; j <= lookback; j++) {
                     if (data[i - j].high > data[i].high || data[i + j].high > data[i].high) isSwingHigh = false;
                     if (data[i - j].low < data[i].low || data[i + j].low < data[i].low) isSwingLow = false;
                 }
-                if (isSwingHigh) levels.push({ type: 'resistance', price: data[i].high });
-                if (isSwingLow) levels.push({ type: 'support', price: data[i].low });
+                if (isSwingHigh) levels.push({ type: 'res', price: data[i].high });
+                if (isSwingLow) levels.push({ type: 'sup', price: data[i].low });
             }
-            let filteredLevels = [];
+            let filtered = [];
             levels.reverse().forEach(level => {
-                if (!filteredLevels.some(f => f.type === level.type && Math.abs(f.price - level.price) / f.price < 0.025)) {
-                    filteredLevels.push(level);
-                }
+                if (!filtered.some(f => f.type === level.type && Math.abs(f.price - level.price) / f.price < 0.025)) filtered.push(level);
             });
-            let supports = filteredLevels.filter(l => l.type === 'support').slice(0, 2).map(l => l.price);
-            let resistances = filteredLevels.filter(l => l.type === 'resistance').slice(0, 2).map(l => l.price);
-            return { supports, resistances };
+            return { 
+                supports: filtered.filter(l => l.type === 'sup').slice(0, 2).map(l => l.price), 
+                resistances: filtered.filter(l => l.type === 'res').slice(0, 2).map(l => l.price) 
+            };
         }
 
         function drawSRLines() {
-            srLines.forEach(line => candlestickSeries.removePriceLine(line));
-            srLines = [];
-            document.getElementById('statRes').innerText = '-';
-            document.getElementById('statSup').innerText = '-';
-
+            srLines.forEach(line => candlestickSeries.removePriceLine(line)); srLines = [];
+            document.getElementById('statRes').innerText = '-'; document.getElementById('statSup').innerText = '-';
             if (!isSRVisible || currentCandleData.length === 0) return;
 
             const { supports, resistances } = calculateSupportResistance(currentCandleData);
-
-            supports.forEach(price => {
-                const line = candlestickSeries.createPriceLine({
-                    price: price, color: '#00e676', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'Sup',
-                });
-                srLines.push(line);
-            });
-            resistances.forEach(price => {
-                const line = candlestickSeries.createPriceLine({
-                    price: price, color: '#ff5252', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'Res',
-                });
-                srLines.push(line);
-            });
+            supports.forEach(price => srLines.push(candlestickSeries.createPriceLine({ price: price, color: '#00e676', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'Sup' })));
+            resistances.forEach(price => srLines.push(candlestickSeries.createPriceLine({ price: price, color: '#ff5252', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'Res' })));
 
             if(resistances.length > 0) document.getElementById('statRes').innerText = Math.min(...resistances).toFixed(2);
             if(supports.length > 0) document.getElementById('statSup').innerText = Math.max(...supports).toFixed(2);
         }
 
-        function formatNumber(num) {
-            if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B';
-            if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
-            if (num >= 1000) return (num / 1000).toFixed(2) + 'K';
-            return num.toString();
+        function updateProfileUI(symbol) {
+            const info = companyDB[symbol] || { 
+                name: symbol, exchange: "Global Market", sector: "N/A", industry: "N/A", 
+                desc: "ไม่พบข้อมูลรายละเอียดบริษัทในฐานข้อมูลระบบ กรุณาตรวจสอบสัญลักษณ์หุ้นอีกครั้ง" 
+            };
+            document.getElementById('profileLogo').innerText = symbol.charAt(0);
+            document.getElementById('profileName').innerText = info.name;
+            document.getElementById('profileExchange').innerText = info.exchange;
+            document.getElementById('profileSector').innerText = info.sector;
+            document.getElementById('profileIndustry').innerText = info.industry;
+            document.getElementById('profileDesc').innerText = info.desc;
         }
 
         function updateUIStats(symbol, cData, vData) {
             document.getElementById('statSymbol').innerText = symbol;
+            updateProfileUI(symbol.replace(' (MOCK)', '')); // อัปเดตข้อมูลบริษัท
+
             if(cData.length < 2) return;
-            
-            const lastData = cData[cData.length - 1];
-            const prevData = cData[cData.length - 2];
-            const lastVol = vData[vData.length - 1].value;
-            
-            const diff = lastData.close - prevData.close;
-            const pct = (diff / prevData.close) * 100;
-            const sign = diff >= 0 ? '+' : '';
+            const last = cData[cData.length - 1], prev = cData[cData.length - 2];
+            const diff = last.close - prev.close, pct = (diff / prev.close) * 100, sign = diff >= 0 ? '+' : '';
             const colorClass = diff >= 0 ? 'positive-text' : 'negative-text';
 
-            document.getElementById('statDate').innerText = lastData.time;
-            document.getElementById('statClose').innerText = lastData.close.toFixed(2);
+            document.getElementById('statDate').innerText = last.time;
+            document.getElementById('statClose').innerText = last.close.toFixed(2);
             document.getElementById('statClose').className = `text-3xl font-bold leading-none ${colorClass}`;
-            
             document.getElementById('statChange').innerText = `${sign}${diff.toFixed(2)} (${sign}${pct.toFixed(2)}%)`;
             document.getElementById('statChange').className = `text-sm font-medium mb-1 ${colorClass}`;
+            
+            document.getElementById('statOpen').innerText = last.open.toFixed(2);
+            document.getElementById('statHigh').innerText = last.high.toFixed(2);
+            document.getElementById('statLow').innerText = last.low.toFixed(2);
+            
+            let num = vData[vData.length - 1].value;
+            document.getElementById('statVol').innerText = num >= 1e9 ? (num / 1e9).toFixed(2) + 'B' : num >= 1e6 ? (num / 1e6).toFixed(2) + 'M' : num >= 1e3 ? (num / 1e3).toFixed(2) + 'K' : num;
 
-            document.getElementById('statOpen').innerText = lastData.open.toFixed(2);
-            document.getElementById('statHigh').innerText = lastData.high.toFixed(2);
-            document.getElementById('statLow').innerText = lastData.low.toFixed(2);
-            document.getElementById('statVol').innerText = formatNumber(lastVol);
+            // อัปเดต RSI
+            let rsiVal = calculateRSI(cData);
+            let rsiEl = document.getElementById('statRSI');
+            rsiEl.innerText = rsiVal;
+            rsiEl.className = rsiVal > 70 ? 'text-red-400' : (rsiVal < 30 ? 'text-green-400' : 'text-blue-300');
         }
 
         function showMessage(type, text) {
             const msgBox = document.getElementById('msgBox');
-            msgBox.className = 'text-xs p-3 rounded-lg flex items-start gap-2 border mt-auto'; 
+            msgBox.className = `text-xs p-3 rounded-lg flex items-start gap-2 border mt-auto shrink-0 ${type === 'error' ? 'bg-red-900/20 border-red-500/30 text-red-400' : 'bg-yellow-900/20 border-yellow-500/30 text-yellow-400'}`;
             msgBox.classList.remove('hidden');
             document.getElementById('msgText').innerText = text;
-
-            if (type === 'error') {
-                msgBox.classList.add('bg-red-900/20', 'border-red-500/30', 'text-red-400');
-                document.getElementById('msgIcon').className = 'ph-fill ph-warning-circle text-base mt-0.5 text-red-500';
-            } else if (type === 'warning') {
-                msgBox.classList.add('bg-yellow-900/20', 'border-yellow-500/30', 'text-yellow-400');
-                document.getElementById('msgIcon').className = 'ph-fill ph-warning text-base mt-0.5 text-yellow-500';
-            }
+            document.getElementById('msgIcon').className = `ph-fill text-base mt-0.5 ${type === 'error' ? 'ph-warning-circle text-red-500' : 'ph-warning text-yellow-500'}`;
         }
 
         async function loadStock() {
-            const symbolInput = document.getElementById('symbolInput');
-            let rawSymbol = symbolInput.value.trim().toUpperCase();
-            if(!rawSymbol) return;
+            const input = document.getElementById('symbolInput');
+            let symbol = input.value.trim().toUpperCase().split(' ')[0];
+            if(!symbol) return; input.value = symbol; 
 
-            let symbol = rawSymbol.split(' ')[0]; 
-            symbolInput.value = symbol; 
-
-            const range = document.getElementById('rangeSelect').value;
             const overlay = document.getElementById('loadingOverlay');
-            
             document.getElementById('msgBox').classList.add('hidden');
             overlay.classList.remove('hidden');
 
             try {
-                const data = await fetchRealMarketData(symbol, range);
+                const data = await fetchRealMarketData(symbol, document.getElementById('rangeSelect').value);
                 currentCandleData = data.cData;
                 candlestickSeries.setData(currentCandleData);
                 volumeSeries.setData(data.vData);
@@ -423,60 +463,37 @@
                 updateUIStats(symbol, currentCandleData, data.vData);
                 drawSRLines();
             } catch (err) {
-                console.error(err);
                 if (err.message === 'PROXY_FAILED') {
                     const mock = generateMockData(200);
                     currentCandleData = mock.cData;
                     candlestickSeries.setData(currentCandleData);
                     volumeSeries.setData(mock.vData);
-                    sma20Series.setData(calculateSMA(currentCandleData, 20));
-                    sma50Series.setData(calculateSMA(currentCandleData, 50));
-                    
+                    sma20Series.setData(calculateSMA(currentCandleData, 20)); sma50Series.setData(calculateSMA(currentCandleData, 50));
                     chart.timeScale().fitContent();
                     updateUIStats(symbol + ' (MOCK)', currentCandleData, mock.vData);
                     drawSRLines();
-                    showMessage('warning', 'API ดึงข้อมูลขัดข้องชั่วคราว แสดงเป็นข้อมูลจำลองครับ');
-                } else {
-                    showMessage('error', err.message);
-                }
-            } finally {
-                overlay.classList.add('hidden');
-            }
+                    showMessage('warning', 'API ดึงข้อมูลขัดข้อง แสดงเป็นข้อมูลจำลองชั่วคราว');
+                } else showMessage('error', err.message);
+            } finally { overlay.classList.add('hidden'); }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const dataList = document.getElementById('stock-list');
-            for (const [ticker, name] of Object.entries(popularStocks)) {
-                const option = document.createElement('option');
-                option.value = ticker;
-                option.text = name;
-                dataList.appendChild(option);
-            }
+            const dl = document.getElementById('stock-list');
+            for (const [t, n] of Object.entries(popularStocks)) dl.appendChild(new Option(n, t));
 
             initChart();
             setTimeout(loadStock, 300);
 
             document.getElementById('loadBtn').addEventListener('click', loadStock);
-            document.getElementById('symbolInput').addEventListener('keypress', (e) => {
-                if(e.key === 'Enter') { e.target.blur(); loadStock(); }
-            });
+            document.getElementById('symbolInput').addEventListener('keypress', e => { if(e.key === 'Enter') { e.target.blur(); loadStock(); } });
             document.getElementById('rangeSelect').addEventListener('change', loadStock);
 
             document.getElementById('toggleSR').addEventListener('click', () => {
                 isSRVisible = !isSRVisible;
-                const ind = document.getElementById('toggleIndicator');
-                const dot = ind.querySelector('div');
-                const text = document.getElementById('toggleSRText');
-
-                if (isSRVisible) {
-                    ind.className = 'w-8 h-4 bg-blue-500 rounded-full p-0.5 transition-colors relative';
-                    dot.className = 'w-3 h-3 bg-white rounded-full absolute right-0.5 transition-all';
-                    text.innerText = 'เส้นแนวรับ-แนวต้าน';
-                } else {
-                    ind.className = 'w-8 h-4 bg-gray-600 rounded-full p-0.5 transition-colors relative';
-                    dot.className = 'w-3 h-3 bg-white rounded-full absolute left-0.5 transition-all';
-                    text.innerText = 'ซ่อนแนวรับ-แนวต้าน';
-                }
+                const ind = document.getElementById('toggleIndicator'), dot = ind.querySelector('div'), text = document.getElementById('toggleSRText');
+                ind.className = `w-8 h-4 rounded-full p-0.5 transition-colors relative ${isSRVisible ? 'bg-blue-500' : 'bg-gray-600'}`;
+                dot.className = `w-3 h-3 bg-white rounded-full absolute transition-all ${isSRVisible ? 'right-0.5' : 'left-0.5'}`;
+                text.innerText = isSRVisible ? 'เส้นแนวรับ-แนวต้าน' : 'ซ่อนแนวรับ-แนวต้าน';
                 drawSRLines();
             });
         });
